@@ -1,6 +1,7 @@
 package menu
 
 import (
+	"Archivos/Proyecto/Analizador"
 	"bufio"
 	"fmt"
 	"os"
@@ -20,7 +21,7 @@ func InicioP() {
 			Ca = false
 		} else {
 			texto = strings.TrimRight(texto, "\n")
-			fmt.Println("Hola " + texto)
+			Analizador.OpenArchivo(texto)
 		}
 	}
 
