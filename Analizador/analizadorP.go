@@ -1,18 +1,20 @@
 package Analizador
 
 import (
-	"Archivos/Proyecto/Procesos"
 	"fmt"
+	"io/ioutil"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
-var contador = 0
+var contador int = 0
 var tamno = 0
 
 func OpenArchivo(rutaA string) {
-	analizador(rutaA)
+
 	contador = 0
+	analizador(rutaA)
 }
 
 func analizador(contenido string) {
@@ -39,6 +41,8 @@ func analizador(contenido string) {
 			} else if unicode.IsSpace(rune(c)) {
 				contador++
 				reconocerPalabra(auxiliar, contenido)
+				auxiliar = ""
+				caso = 0
 			} else {
 				ErrorT(string(c), "letra--")
 				contador = tamno
@@ -59,7 +63,7 @@ func reconocerPalabra(palabraR string, contenido string) {
 			if strings.ToLower(extraerString(contenido)) == "path" {
 				if contenido[contador] == '-' && contenido[contador+1] == '>' {
 					contador += 2
-					Procesos.AbrirArchivoM(extraerPath(contenido))
+					abrirArchivoM(extraerPath(contenido))
 					contador = 50000
 				} else {
 					ErrorT(string(contenido[contador-1]), "->")
@@ -71,20 +75,133 @@ func reconocerPalabra(palabraR string, contenido string) {
 		} else {
 			ErrorT(string(contenido[contador]), "se esperaba un -")
 		}
+	case "pause":
+		var pru string
+		fmt.Scanf("%s", &pru)
+	case "mkdisk":
+		contador++
+		if strings.ToLower(extraerString(contenido)) == "size" {
+			contador += 2
+			var sizeA int64 = extraerInt(contenido)
+			if sizeA > 0 {
+				contador++
+				if contenido[contador] == '-' {
+					contador++
+					if strings.ToLower(extraerString(contenido)) == "path" {
+						if contenido[contador] == '-' && contenido[contador+1] == '>' {
+							contador += 2
+							var pathB string = extraerPath(contenido)
+							fmt.Println(pathB)
+							contador += 2
+							t1 := strings.ToLower(extraerString(contenido))
+							if t1 == "name" {
+								if contenido[contador] == '-' && contenido[contador+1] == '>' {
+									contador += 2
+									id := extraerId(contenido)
+									if strings.Contains(id, ".dsk") {
+										contador++
+										if contador >= tamno || contenido[contador] == '\n' {
+											return
+										}
+										contador++
+										t2 := strings.ToLower(extraerString(contenido))
+										if t2 == "unit" {
+											contador += 2
+											if contenido[contador] == 'k' {
+												sizeA = sizeA * 1024
+											} else if contenido[contador] == 'm' {
+												sizeA = sizeA * 1
+											} else {
+												ErrorT(string(contenido[contador]), "una letra k o m")
+											}
+											contador++
+										} else {
+											ErrorT(t2, "unit")
+										}
+									} else {
+										ErrorT(id, "no contiene la extencion .dsk ")
+									}
+								} else {
+									ErrorT(string(contenido[contador-1]), "->")
+								}
+							} else {
+								ErrorT(t1, "name")
+							}
+
+						} else {
+							ErrorT(string(contenido[contador-1]), "->")
+
+						}
+					} else {
+						ErrorT("n2", "se esperaba un path")
+					}
+				} else {
+					ErrorT(string(contenido[contador]), "se esperaba un --")
+				}
+			} else {
+				ErrorT(string(contenido[contador-1]), "se esperaba un numero positivo mayor que 0")
+			}
+		} else {
+			ErrorT(string(contenido[contador]), "size")
+		}
+
 	default:
 		fmt.Printf("este caso no existe- %s\n", palabraR)
 	}
 }
 
-func extraerPath(contenido string) string {
+func extraerId(contenido string) string {
 	auxiliar := ""
-	for contenido[contador] != '\n' {
+	for unicode.IsLetter(rune(contenido[contador])) || unicode.IsDigit(rune(contenido[contador])) || contenido[contador] == '_' || contenido[contador] == '.' {
 		auxiliar += string(contenido[contador])
 		contador++
 		if contador >= tamno {
 			return auxiliar
 		}
 	}
+	return auxiliar
+}
+
+func extraerInt(contenido string) int64 {
+	auxiliar := ""
+	if contenido[contador] == '-' {
+		return 0
+	}
+	for unicode.IsDigit(rune(contenido[contador])) {
+		auxiliar += string(contenido[contador])
+		contador++
+	}
+	i, err := strconv.Atoi(auxiliar)
+	if err == nil {
+		return int64(i)
+	}
+	return 0
+}
+
+func extraerPath(contenido string) string {
+	auxiliar := ""
+	var limitador byte
+	if contenido[contador] == '"' {
+		limitador = '"'
+		contador++
+		for contenido[contador] != limitador {
+			auxiliar += string(contenido[contador])
+			contador++
+			if contador >= tamno {
+				return auxiliar
+			}
+		}
+		contador++
+	} else {
+		for !unicode.IsSpace(rune(contenido[contador])) {
+			auxiliar += string(contenido[contador])
+			contador++
+			if contador >= tamno {
+				return auxiliar
+			}
+		}
+	}
+
 	return auxiliar
 }
 
@@ -98,5 +215,21 @@ func extraerString(contenido string) string {
 }
 
 func ErrorT(caracter string, esperaba string) {
+	contador = tamno
 	fmt.Printf("Se encontro un: %s y se esperaba: %s\n", caracter, esperaba)
+}
+
+func abrirArchivoM(ruta string) {
+
+	b, err := ioutil.ReadFile(ruta) // just pass the file name
+	if err != nil {
+		fmt.Println("error --")
+		fmt.Print(err)
+		return
+	}
+	// convertimos los bits a string
+	str := string(b)
+	str = strings.ReplaceAll(str, "\\*\n", "")
+	fmt.Println(str)
+	OpenArchivo(str)
 }

@@ -22,6 +22,7 @@ func InicioP() {
 		} else {
 			texto = strings.TrimRight(texto, "\n")
 			Analizador.OpenArchivo(texto)
+			fmt.Println("Lectura exitosa")
 		}
 	}
 
