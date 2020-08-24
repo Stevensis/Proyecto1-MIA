@@ -1,6 +1,7 @@
 package Analizador
 
 import (
+	"Archivos/Proyecto/Procesos"
 	"fmt"
 	"io/ioutil"
 	"strconv"
@@ -56,6 +57,7 @@ func analizador(contenido string) {
 
 //Metodo que verifica las palabras reservadas
 func reconocerPalabra(palabraR string, contenido string) {
+	var te1, pathB string
 	switch strings.ToLower(palabraR) {
 	case "exec":
 		if contenido[contador] == '-' {
@@ -77,7 +79,9 @@ func reconocerPalabra(palabraR string, contenido string) {
 		}
 	case "pause":
 		var pru string
+		fmt.Print("Pause-:")
 		fmt.Scanf("%s", &pru)
+		contador--
 	case "mkdisk":
 		contador++
 		if strings.ToLower(extraerString(contenido)) == "size" {
@@ -90,17 +94,18 @@ func reconocerPalabra(palabraR string, contenido string) {
 					if strings.ToLower(extraerString(contenido)) == "path" {
 						if contenido[contador] == '-' && contenido[contador+1] == '>' {
 							contador += 2
-							var pathB string = extraerPath(contenido)
-							fmt.Println(pathB)
+							pathB = extraerPath(contenido)
 							contador += 2
 							t1 := strings.ToLower(extraerString(contenido))
 							if t1 == "name" {
 								if contenido[contador] == '-' && contenido[contador+1] == '>' {
 									contador += 2
-									id := extraerId(contenido)
-									if strings.Contains(id, ".dsk") {
+									idA := extraerId(contenido)
+									if strings.Contains(idA, ".dsk") {
 										contador++
 										if contador >= tamno || contenido[contador] == '\n' {
+											sizeA = sizeA * 1024 * 1024
+											Procesos.CrearDisco(sizeA, pathB, idA) //Se manda a crear el disco
 											return
 										}
 										contador++
@@ -109,8 +114,11 @@ func reconocerPalabra(palabraR string, contenido string) {
 											contador += 2
 											if contenido[contador] == 'k' {
 												sizeA = sizeA * 1024
+												Procesos.CrearDisco(sizeA, pathB, idA) //Se manda a crear el disco
+
 											} else if contenido[contador] == 'm' {
-												sizeA = sizeA * 1
+												sizeA = sizeA * 1024 * 1024
+												Procesos.CrearDisco(sizeA, pathB, idA) //Se manda a crear el disco
 											} else {
 												ErrorT(string(contenido[contador]), "una letra k o m")
 											}
@@ -119,7 +127,7 @@ func reconocerPalabra(palabraR string, contenido string) {
 											ErrorT(t2, "unit")
 										}
 									} else {
-										ErrorT(id, "no contiene la extencion .dsk ")
+										ErrorT(idA, "no contiene la extencion .dsk ")
 									}
 								} else {
 									ErrorT(string(contenido[contador-1]), "->")
@@ -144,7 +152,16 @@ func reconocerPalabra(palabraR string, contenido string) {
 		} else {
 			ErrorT(string(contenido[contador]), "size")
 		}
-
+	case "rmdisk":
+		contador++
+		te1 = strings.ToLower(extraerString(contenido))
+		if te1 == "path" {
+			contador += 2
+			pathB = extraerPath(contenido)
+			Procesos.EliminarDisco(pathB)
+		} else {
+			ErrorT(te1, "path")
+		}
 	default:
 		fmt.Printf("este caso no existe- %s\n", palabraR)
 	}
@@ -229,7 +246,6 @@ func abrirArchivoM(ruta string) {
 	}
 	// convertimos los bits a string
 	str := string(b)
-	str = strings.ReplaceAll(str, "\\*\n", "")
-	fmt.Println(str)
+	str = strings.ReplaceAll(str, "\\*\n", "") //quitamos del archivo los " \* \n " que pueden venir
 	OpenArchivo(str)
 }
