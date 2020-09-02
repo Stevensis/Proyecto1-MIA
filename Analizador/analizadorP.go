@@ -4,6 +4,7 @@ import (
 	"Archivos/Proyecto/Procesos"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"unicode"
@@ -162,9 +163,137 @@ func reconocerPalabra(palabraR string, contenido string) {
 		} else {
 			ErrorT(te1, "path")
 		}
+
+	case "fdisk":
+		contador++
+		linea := extrarLInea(contenido)
+		startfdisk(strings.Split(linea, " -"))
 	default:
 		fmt.Printf("este caso no existe- %s\n", palabraR)
 	}
+}
+
+//Metodo para trabajar fdisk
+func startfdisk(contenido []string) {
+	var bUnit, bType, bFit, bDelete, bAdd bool
+	var typeP byte
+	sizeP := 0
+	pathP := ""
+	var fitP byte
+	deleteP := ""
+	nameP := ""
+	addS := 0
+	//fmt.Printf("%q\n", contenido)
+	for i := 0; i < len(contenido); i++ {
+		divi := strings.Split(contenido[i], "->")
+		switch strings.ToLower(divi[0]) {
+		case "size":
+			sizeP = extraerInt2(divi[1])
+		case "unit":
+			if strings.ToLower(divi[1]) == "k" {
+				sizeP = sizeP * 1024
+			} else if strings.ToLower(divi[1]) == "m" {
+				sizeP = sizeP * 1024 * 1024
+			} else {
+				ErrorT(divi[1], "No es un parametro para unit")
+				i = len(contenido)
+			}
+			bUnit = true
+		case "path":
+			pathP = strings.ReplaceAll(divi[1], "\"", "")
+			if _, err := os.Stat(pathP); !os.IsNotExist(err) {
+				//fmt.Printf("Si existe este archivo %s", pathP)
+			} else {
+				ErrorT(pathP, " Este archivo no existe ")
+				i = len(contenido)
+			}
+		case "type":
+			typeP = strings.ToLower(divi[1])[0]
+			if typeP == 'p' || typeP == 'e' || typeP == 'l' {
+				bType = true
+			} else {
+				ErrorT(string(typeP), " P,E o L ")
+				i = len(contenido)
+			}
+		case "fit":
+			fitPT := strings.ToLower(divi[1])
+			if fitPT == "bf" || fitPT == "ff" || fitPT == "wf" {
+				switch fitPT {
+				case "bf":
+					fitP = 'b'
+				case "ff":
+					fitP = 'f'
+				case "wf":
+					fitP = 'w'
+				}
+				bFit = true
+			} else {
+				ErrorT(fitPT, "No es un parametro de fit")
+				i = len(contenido)
+			}
+		case "delete":
+			deleteP = strings.ToLower(divi[1])
+			if deleteP == "full" || deleteP == "fast" {
+				bDelete = true
+			} else {
+				ErrorT(deleteP, "no es un parametro de delete")
+				i = len(contenido)
+			}
+		case "name":
+			nameP = divi[1]
+		case "add":
+			addS = extraerInt2(divi[1])
+		default:
+			ErrorT(divi[0], "No es parametro de fdisk")
+			i = len(contenido)
+		}
+	}
+
+	if !bUnit { //se verifica que la bandera unit
+		sizeP = sizeP * 1024
+	}
+
+	if !bType {
+		typeP = 'p'
+	}
+
+	if !bFit {
+		fitP = 'w'
+	}
+
+	if !bDelete && !bAdd {
+		Procesos.CrearParticion(sizeP, pathP, typeP, fitP, nameP)
+		return
+	}
+
+	if bDelete {
+		fmt.Println("\n Eliminar particion" + nameP)
+		return
+	}
+
+	if bAdd {
+		fmt.Println("\n Modificar tama;o particion " + nameP + " " + string(addS))
+		return
+	}
+
+}
+
+func extraerInt2(contenido string) int {
+	i, err := strconv.Atoi(contenido)
+	if err == nil {
+		return int(i)
+	}
+	ErrorT(contenido, "No es un numero")
+	return 0
+}
+
+func extrarLInea(contenido string) string {
+	auxiliar := ""
+	for contenido[contador] != '\n' && contador < tamno {
+		auxiliar = auxiliar + string(contenido[contador])
+		contador++
+	}
+	return auxiliar
 }
 
 func extraerId(contenido string) string {
