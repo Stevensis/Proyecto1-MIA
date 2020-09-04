@@ -103,7 +103,7 @@ func CrearParticion(sizeP int, pathP string, typeP byte, fitP byte, nameP string
 	mbr_size := unsafe.Sizeof(tempM)
 	//fmt.Println(tempM)
 	e, p, l, espacioO := verificarParticion(tempM.Particiones)
-	if e == 1 && typeP == 'e' {
+	if e >= 1 && typeP == 'e' {
 		fmt.Println("La particion " + nameP + " es una extendida y ya existe una en este disco")
 		return
 	}
@@ -112,8 +112,8 @@ func CrearParticion(sizeP int, pathP string, typeP byte, fitP byte, nameP string
 		fmt.Println("Ya existen 4 particiones en este disco")
 		return
 	}
-
-	if particionExiste(tempM.Particiones, nameP) { //verificamos que no exista una particion con este nombre
+	existencia, _ := particionExiste(tempM.Particiones, nameP)
+	if existencia { //verificamos que no exista una particion con este nombre
 		fmt.Print("Ya existe una particion con este nombre " + nameP + " en el disco " + pathP)
 		return
 	}
@@ -154,20 +154,64 @@ func CrearParticion(sizeP int, pathP string, typeP byte, fitP byte, nameP string
 			tempM.Particiones[i].Size = int64(sizeP)
 			tempM.Particiones[i].Status = 't'
 			tempM.Particiones[i].Type = typeP
+			actualizarMbr(pathP, tempM)
 			return
 		}
 	}
 }
 
-func particionExiste(tempP [4]particion, nameP string) bool {
+func EliminarParticion(pathD string, nameP string) {
+	tempM := readFileBinary(pathD)
+	existencia, index := particionExiste(tempM.Particiones, nameP)
+	if !existencia { //verificamos que no exista una particion con este nombre
+		fmt.Print("No existe una particion con este nombre " + nameP + " en el disco " + pathD)
+		return
+	}
+
+	var pru string
+	fmt.Printf("Desea Eliminar %s esta particion? Y/N: ", nameP)
+	fmt.Scanf("%s", &pru)
+	if strings.ToLower(pru) == "y" {
+		tempM.Particiones[index].Fit = '0'
+		copy(tempM.Particiones[index].Name[:], "")
+		tempM.Particiones[index].Size = 0
+		tempM.Particiones[index].Start = 0
+		tempM.Particiones[index].Status = 'f'
+		tempM.Particiones[index].Type = '0'
+		actualizarMbr(pathD, tempM)
+		fmt.Println("Se elimino la particion")
+	} else {
+		fmt.Println("No quiso eliminar la particion")
+	}
+
+}
+
+func PruebaContenido(pathD string) {
+	tempM := readFileBinary(pathD)
+	nameD := strings.Split(pathD, "/") //extrae el nombre del disco
+	fmt.Printf("Nombre: %s\n", nameD[len(nameD)-1])
+	fmt.Printf("mbr_tamanio: %d\n", tempM.SizeD)
+	fmt.Printf("mbr_fecha: %s\n", tempM.Tiempo)
+	fmt.Printf("mbt_signature %d\n", tempM.Signature)
+	for i := 0; i < len(tempM.Particiones); i++ {
+		fmt.Printf("Nombre_Particion_%d: %s\n", i, tempM.Particiones[i].Name)
+		fmt.Printf("Particion%d_estado: %c\n", i, tempM.Particiones[i].Status)
+		fmt.Printf("Particion%d_tipo: %c\n", i, tempM.Particiones[i].Type)
+		fmt.Printf("Particion%d_fit %c\n", i, tempM.Particiones[i].Fit)
+		fmt.Printf("Particion%d_start: %d\n", i, tempM.Particiones[i].Start)
+		fmt.Printf("Particion%d_size %d\n", i, tempM.Particiones[i].Size)
+	}
+}
+
+func particionExiste(tempP [4]particion, nameP string) (bool, int) {
 	var nameT [16]byte
 	copy(nameT[:], nameP)
 	for i := 0; i < len(tempP); i++ {
-		if tempP[1].Status != 'f' && tempP[1].Name == nameT {
-			return true
+		if tempP[i].Status != 'f' && tempP[i].Name == nameT {
+			return true, i
 		}
 	}
-	return false
+	return false, 0
 }
 
 func verificarParticion(tempP [4]particion) (int, int, int, int) {

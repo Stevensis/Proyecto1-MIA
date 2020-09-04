@@ -175,9 +175,14 @@ func reconocerPalabra(palabraR string, contenido string) {
 
 //Metodo para trabajar fdisk
 func startfdisk(contenido []string) {
-	var bUnit, bType, bFit, bDelete, bAdd bool
+	var bUnit bool = false
+	var bType bool = false
+	var bFit bool = false
+	var bDelete bool = false
+	var bAdd bool = false
 	var typeP byte
 	sizeP := 0
+	unitS := ""
 	pathP := ""
 	var fitP byte
 	deleteP := ""
@@ -190,15 +195,15 @@ func startfdisk(contenido []string) {
 		case "size":
 			sizeP = extraerInt2(divi[1])
 		case "unit":
-			if strings.ToLower(divi[1]) == "k" {
-				sizeP = sizeP * 1024
-			} else if strings.ToLower(divi[1]) == "m" {
-				sizeP = sizeP * 1024 * 1024
+			unitS = strings.ToLower(divi[1])
+			if unitS == "k" {
+				bUnit = true
+			} else if unitS == "m" {
+				bUnit = true
 			} else {
 				ErrorT(divi[1], "No es un parametro para unit")
 				i = len(contenido)
 			}
-			bUnit = true
 		case "path":
 			pathP = strings.ReplaceAll(divi[1], "\"", "")
 			if _, err := os.Stat(pathP); !os.IsNotExist(err) {
@@ -251,6 +256,12 @@ func startfdisk(contenido []string) {
 
 	if !bUnit { //se verifica que la bandera unit
 		sizeP = sizeP * 1024
+	} else {
+		if unitS == "k" {
+			sizeP = sizeP * 1024
+		} else if unitS == "m" {
+			sizeP = sizeP * 1024 * 1024
+		}
 	}
 
 	if !bType {
@@ -263,11 +274,15 @@ func startfdisk(contenido []string) {
 
 	if !bDelete && !bAdd {
 		Procesos.CrearParticion(sizeP, pathP, typeP, fitP, nameP)
+		//Procesos.PruebaContenido(pathP)
 		return
 	}
 
 	if bDelete {
-		fmt.Println("\n Eliminar particion" + nameP)
+		Procesos.PruebaContenido(pathP)
+		fmt.Println("\n Eliminar particion " + nameP)
+		Procesos.EliminarParticion(pathP, nameP)
+		Procesos.PruebaContenido(pathP)
 		return
 	}
 
