@@ -21,6 +21,7 @@ func InicioP() {
 			Ca = false
 		} else {
 			texto = strings.TrimRight(texto, "\n")
+			Analizador.AsignarLetra()
 			Analizador.OpenArchivo(texto)
 			//fmt.Println("Lectura exitosa")
 		}

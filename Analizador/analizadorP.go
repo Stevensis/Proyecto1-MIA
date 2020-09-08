@@ -10,6 +10,8 @@ import (
 	"unicode"
 )
 
+var Mount_Discos [27]Procesos.Disk_mount
+var contadorLetra int = 97
 var contador int = 0
 var tamno = 0
 
@@ -168,6 +170,19 @@ func reconocerPalabra(palabraR string, contenido string) {
 		contador++
 		linea := extrarLInea(contenido)
 		startfdisk(strings.Split(linea, " -"))
+	case "mount":
+		contador--
+		if contenido[contador] == '\n' {
+			MostrarMount()
+			return
+		}
+		contador += 2
+		linea := extrarLInea(contenido)
+		AnalizarMount(strings.Split(linea, " -"))
+	case "unmount":
+		contador++
+		linea := extrarLInea(contenido)
+		UnmountAnalizador(strings.Split(linea, " -"))
 	default:
 		fmt.Printf("este caso no existe- %s\n", palabraR)
 	}
@@ -245,7 +260,7 @@ func startfdisk(contenido []string) {
 				i = len(contenido)
 			}
 		case "name":
-			nameP = divi[1]
+			nameP = strings.ReplaceAll(divi[1], "\"", "")
 		case "add":
 			addS = extraerInt2(divi[1])
 		default:
@@ -392,4 +407,15 @@ func abrirArchivoM(ruta string) {
 	str := string(b)
 	str = strings.ReplaceAll(str, "\\*\n", "") //quitamos del archivo los " \* \n " que pueden venir
 	OpenArchivo(str)
+}
+
+func AsignarLetra() {
+	for i := 0; i < 26; i++ {
+		Mount_Discos[i].IdentificadorMD = string(byte(contadorLetra))
+		Mount_Discos[i].StateMD = '0'
+		contadorLetra++
+		for j := 0; j < len(Mount_Discos[i].Lst_PaticionM); j++ {
+			Mount_Discos[i].Lst_PaticionM[j].StatePM = '0'
+		}
+	}
 }

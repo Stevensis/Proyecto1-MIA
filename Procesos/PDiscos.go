@@ -16,16 +16,32 @@ type mbr struct {
 	SizeD       int64
 	Signature   int8
 	Tiempo      [25]byte
-	Particiones [4]particion
+	Particiones [4]Particion
 }
 
-type particion struct {
+type Particion struct {
 	Status byte
 	Type   byte
 	Fit    byte
 	Start  int64
 	Size   int64
 	Name   [16]byte
+}
+
+type Disk_mount struct {
+	PathMD          string
+	StateMD         byte
+	NameMD          string
+	indexMD         int
+	SizeMD          int
+	IdentificadorMD string
+	Lst_PaticionM   [15]Particion_mount
+}
+
+type Particion_mount struct {
+	Id          string
+	PariticionM Particion
+	StatePM     byte
 }
 
 func CrearDisco(sizeD int64, pathD string, nameD string) {
@@ -186,6 +202,16 @@ func EliminarParticion(pathD string, nameP string) {
 
 }
 
+func VerificarParticionMount(pathD string, nameP string) (bool, Particion) {
+	tempM := readFileBinary(pathD)
+	existencia, index := particionExiste(tempM.Particiones, nameP)
+	return existencia, tempM.Particiones[index]
+}
+
+func OptenerMbr(pathD string) mbr {
+	return readFileBinary(pathD)
+}
+
 func PruebaContenido(pathD string) {
 	tempM := readFileBinary(pathD)
 	nameD := strings.Split(pathD, "/") //extrae el nombre del disco
@@ -203,7 +229,7 @@ func PruebaContenido(pathD string) {
 	}
 }
 
-func particionExiste(tempP [4]particion, nameP string) (bool, int) {
+func particionExiste(tempP [4]Particion, nameP string) (bool, int) {
 	var nameT [16]byte
 	copy(nameT[:], nameP)
 	for i := 0; i < len(tempP); i++ {
@@ -214,7 +240,7 @@ func particionExiste(tempP [4]particion, nameP string) (bool, int) {
 	return false, 0
 }
 
-func verificarParticion(tempP [4]particion) (int, int, int, int) {
+func verificarParticion(tempP [4]Particion) (int, int, int, int) {
 	primaria := 0
 	extendida := 0
 	libre := 0
