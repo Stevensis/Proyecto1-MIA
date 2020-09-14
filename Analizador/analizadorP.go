@@ -183,6 +183,10 @@ func reconocerPalabra(palabraR string, contenido string) {
 		contador++
 		linea := extrarLInea(contenido)
 		UnmountAnalizador(strings.Split(linea, " -"))
+	case "mkfs":
+		contador++
+		//linea := extrarLInea(contenido)
+
 	default:
 		fmt.Printf("este caso no existe- %s\n", palabraR)
 	}
